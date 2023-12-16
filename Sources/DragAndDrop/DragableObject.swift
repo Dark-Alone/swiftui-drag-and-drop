@@ -78,7 +78,7 @@ struct DragableObject: ViewModifier {
                         SimultaneousGesture(
                             LongPressGesture()
                                 .onEnded { pressValue in
-                                    if dragState == .none {
+                                    if dragState == .none && isDragAvaliableAfterLongPress {
                                         dragState = .unknown
                                     }
                                 },
