@@ -6,3 +6,10 @@ public protocol DropReceivableObservableObject: ObservableObject {
     
     func setDropArea(_ dropArea: CGRect, on dropReceiver: DropReceivable)
 }
+
+@available(iOS 17, *)
+public protocol DropReceivableObservable: Observation.Observable, AnyObject {
+    associatedtype DropReceivable: DropReceiver
+    
+    func setDropArea(_ dropArea: CGRect, on dropReceiver: DropReceivable)
+}
