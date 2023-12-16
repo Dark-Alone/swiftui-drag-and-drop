@@ -9,6 +9,7 @@ struct DragableObject: ViewModifier {
     @State private var successfulDrop: Bool = false
     let dragableObject: Dragable?
     
+    @Binding var isDraging: Bool
     var isDragAvaliableAfterLongPress: Bool = false
     
     var onDragObject: ((Dragable, CGPoint) -> DragState)? = nil
@@ -16,29 +17,33 @@ struct DragableObject: ViewModifier {
     var onDropObject: ((Dragable, CGPoint) -> Bool)? = nil
     var onDropped: ((CGPoint) -> Bool)? = nil
     
-    init(isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping ((CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool)) {
+    init(isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping ((CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool)) {
         self.dragableObject = nil
+        self._isDraging = isDraging
         self.isDragAvaliableAfterLongPress = isDragAvaliableAfterLongPress
         self.onDragged = onDragged
         self.onDropped = onDropped
     }
     
-    init(object: Dragable, isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping ((CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool)) {
+    init(object: Dragable, isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping ((CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool)) {
         self.dragableObject = object
+        self._isDraging = isDraging
         self.isDragAvaliableAfterLongPress = isDragAvaliableAfterLongPress
         self.onDragged = onDragged
         self.onDropObject = onDropObject
     }
     
-    init(object: Dragable, isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool)) {
+    init(object: Dragable, isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool)) {
         self.dragableObject = object
+        self._isDraging = isDraging
         self.isDragAvaliableAfterLongPress = isDragAvaliableAfterLongPress
         self.onDragObject = onDragObject
         self.onDropped = onDropped
     }
     
-    init(object: Dragable, isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool)) {
+    init(object: Dragable, isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool)) {
         self.dragableObject = object
+        self._isDraging = isDraging
         self.isDragAvaliableAfterLongPress = isDragAvaliableAfterLongPress
         self.onDragObject = onDragObject
         self.onDropObject = onDropObject
@@ -57,6 +62,7 @@ struct DragableObject: ViewModifier {
                                 dragState = .unavaliable
                                 return
                             }
+                            self.isDraging = true
                             self.dragOffset = CGSize(
                                 width: gesture.translation.width,
                                 height: gesture.translation.height)
@@ -66,6 +72,7 @@ struct DragableObject: ViewModifier {
                             
                         }
                         .onEnded { gesture in
+                            self.isDraging = false
                             if dragState == .unavaliable { return }
                             successfulDrop = self.onDropped != nil ? self.onDropped!(gesture.location) : self.onDropObject!(dragableObject!, gesture.location)
                             withAnimation(.linear(duration: DrawingConstants.dragStateOnEndedTransitionDuration)) {
@@ -79,11 +86,13 @@ struct DragableObject: ViewModifier {
                             LongPressGesture()
                                 .onEnded { pressValue in
                                     if dragState == .none && isDragAvaliableAfterLongPress {
+                                        isDraging = true
                                         dragState = .unknown
                                     }
                                 },
                             DragGesture(minimumDistance: 0)
                                 .onEnded { _ in
+                                    self.isDraging = false
                                     dragState = .none
                                 }
                         )
@@ -119,8 +128,9 @@ private struct DrawingConstants {
 }
 
 extension DragableObject {
-    init(isDragAvaliableAfterLongPress: Bool = false) {
+    init(isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false) {
         self.dragableObject = nil
+        self._isDraging = isDraging
         self.isDragAvaliableAfterLongPress = isDragAvaliableAfterLongPress
         self.onDragged = defaultOnDragged
         self.onDropped = defaultOnDropped
@@ -131,23 +141,23 @@ extension DragableObject {
 }
 
 extension View {
-    public func dragable(isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping (CGPoint) -> DragState, onDropped: @escaping (CGPoint) -> Bool) -> some View {
-        modifier(DragableObject(isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragged: onDragged, onDropped: onDropped))
+    public func dragable(isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping (CGPoint) -> DragState, onDropped: @escaping (CGPoint) -> Bool) -> some View {
+        modifier(DragableObject(isDraging: isDraging, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragged: onDragged, onDropped: onDropped))
     }
     
-    public func dragable(object: Dragable, isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping (Dragable, CGPoint) -> DragState, onDropped: @escaping (CGPoint) -> Bool) -> some View {
-        modifier(DragableObject(object: object, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragObject: onDragObject, onDropped: onDropped))
+    public func dragable(object: Dragable, isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping (Dragable, CGPoint) -> DragState, onDropped: @escaping (CGPoint) -> Bool) -> some View {
+        modifier(DragableObject(object: object, isDraging: isDraging, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragObject: onDragObject, onDropped: onDropped))
     }
     
-    public func dragable(object: Dragable, isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping (CGPoint) -> DragState, onDropObject: @escaping (Dragable, CGPoint) -> Bool) -> some View {
-        modifier(DragableObject(object: object, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragged: onDragged, onDropObject: onDropObject))
+    public func dragable(object: Dragable, isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragged: @escaping (CGPoint) -> DragState, onDropObject: @escaping (Dragable, CGPoint) -> Bool) -> some View {
+        modifier(DragableObject(object: object, isDraging: isDraging, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragged: onDragged, onDropObject: onDropObject))
     }
     
-    public func dragable(object: Dragable, isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping (Dragable, CGPoint) -> DragState, onDropObject: @escaping (Dragable, CGPoint) -> Bool) -> some View {
-        modifier(DragableObject(object: object, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragObject: onDragObject, onDropObject: onDropObject))
+    public func dragable(object: Dragable, isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false, onDragObject: @escaping (Dragable, CGPoint) -> DragState, onDropObject: @escaping (Dragable, CGPoint) -> Bool) -> some View {
+        modifier(DragableObject(object: object, isDraging: isDraging, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress, onDragObject: onDragObject, onDropObject: onDropObject))
     }
     
-    public func dragable(isDragAvaliableAfterLongPress: Bool = false) -> some View {
-        modifier(DragableObject(isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress))
+    public func dragable(isDraging: Binding<Bool> = .constant(false), isDragAvaliableAfterLongPress: Bool = false) -> some View {
+        modifier(DragableObject(isDraging: isDraging, isDragAvaliableAfterLongPress: isDragAvaliableAfterLongPress))
     }
 }
