@@ -3,6 +3,8 @@ import SwiftUI
 
 @available(iOS 14, *)
 public struct DragButton: View {
+    public init() { }
+    
     public var body: some View {
         ScrollViewGestureButton(
             dragStartAction: { value in
