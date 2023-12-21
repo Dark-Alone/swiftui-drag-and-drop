@@ -125,7 +125,7 @@ struct DragableObject: ViewModifier, DragableModifier {
     }
 }
 
-private struct DrawingConstants {
+struct DrawingConstants {
     static let shadowRadius: CGFloat = 10
     static let dragStateOnChangedTransitionDuration: Double = 0.25
     static let dragStateOnEndedTransitionDuration: Double = 2
