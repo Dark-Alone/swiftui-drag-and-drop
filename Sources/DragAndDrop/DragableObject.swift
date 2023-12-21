@@ -3,7 +3,16 @@ import SwiftUI
 
 public protocol Dragable { }
 
-struct DragableObject: ViewModifier {
+protocol DragableModifier {
+    var dragableObject: Dragable? { get }
+    
+    var onDragObject: ((Dragable, CGPoint) -> DragState)? { get set }
+    var onDragged: ((CGPoint) -> DragState)? { get set }
+    var onDropObject: ((Dragable, CGPoint) -> Bool)? { get set }
+    var onDropped: ((CGPoint) -> Bool)? { get set }
+}
+
+struct DragableObject: ViewModifier, DragableModifier {
     @State private var dragOffset = CGSize.zero
     @State private var dragState = DragState.none
     @State private var successfulDrop: Bool = false
