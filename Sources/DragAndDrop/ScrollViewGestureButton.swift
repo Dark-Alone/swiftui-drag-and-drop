@@ -47,6 +47,7 @@ public struct ScrollViewGestureButton<Label: View>: View {
      */
     public init(
         isPressed: Binding<Bool>? = nil,
+        offset: Binding<CGSize>? = nil,
         pressAction: Action? = nil,
         releaseInsideAction: Action? = nil,
         releaseOutsideAction: Action? = nil,
@@ -63,6 +64,7 @@ public struct ScrollViewGestureButton<Label: View>: View {
         label: @escaping LabelBuilder
     ) {
         self.isPressedBinding = isPressed ?? .constant(false)
+        self._offset = offset ?? .constant(.zero)
         self._config = State(wrappedValue: GestureConfiguration(
             state: GestureState(),
             pressAction: pressAction ?? {},
@@ -87,6 +89,9 @@ public struct ScrollViewGestureButton<Label: View>: View {
     public typealias LabelBuilder = (_ isPressed: Bool) -> Label
 
     var isPressedBinding: Binding<Bool>
+    
+    @Binding
+    var offset: CGSize
 
     @State
     var config: GestureConfiguration
@@ -100,6 +105,7 @@ public struct ScrollViewGestureButton<Label: View>: View {
     public var body: some View {
         Button(action: config.releaseInsideAction) {
             config.label(isPressed)
+                .offset(x: offset.width, y: offset.height)
                 .withDragGestureActions(
                     for: self.config,
                     isPressed: $isPressed,
