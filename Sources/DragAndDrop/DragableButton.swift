@@ -2,13 +2,18 @@
 import SwiftUI
 
 @available(iOS 14, *)
-struct DragableButtonActions {
+public struct DragableButtonActions {
     var pressAction: ScrollViewGestureButton.Action?
     var releaseInsideAction: ScrollViewGestureButton.Action?
+    
+    public init(pressAction: ScrollViewGestureButton.Action? = nil, releaseInsideAction: ScrollViewGestureButton.Action? = nil) {
+        self.pressAction = pressAction
+        self.releaseInsideAction = releaseInsideAction
+    }
 }
 
 @available(iOS 14, *)
-struct DragableButton: ViewModifier, DragableModifier {
+public struct DragableButton<Label: View>: View, DragableModifier {
     @State private var dragOffset = CGSize.zero
     @State private var dragState = DragState.none
     let dragableObject: Dragable?
@@ -20,48 +25,53 @@ struct DragableButton: ViewModifier, DragableModifier {
     
     var buttonActions: DragableButtonActions?
     
-    init(onDragged: @escaping ((CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil) {
+    var label: LabelBuilder
+    
+    public init(onDragged: @escaping ((CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil, label: @escaping LabelBuilder) {
         self.dragableObject = nil
         self.onDragged = onDragged
         self.onDropped = onDropped
         self.buttonActions = buttonActions
+        self.label = label
     }
     
-    init(object: Dragable, onDragged: @escaping ((CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil) {
+    public init(object: Dragable, onDragged: @escaping ((CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil, label: @escaping LabelBuilder) {
         self.dragableObject = object
         self.onDragged = onDragged
         self.onDropObject = onDropObject
         self.buttonActions = buttonActions
+        self.label = label
     }
     
-    init(object: Dragable, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil) {
+    public init(object: Dragable, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropped: @escaping ((CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil, label: @escaping LabelBuilder) {
         self.dragableObject = object
         self.onDragObject = onDragObject
         self.onDropped = onDropped
         self.buttonActions = buttonActions
+        self.label = label
     }
     
-    init(object: Dragable, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil) {
+    public init(object: Dragable, onDragObject: @escaping ((Dragable, CGPoint) -> DragState), onDropObject: @escaping ((Dragable, CGPoint) -> Bool), buttonActions: DragableButtonActions? = nil, label: @escaping LabelBuilder) {
         self.dragableObject = object
         self.onDragObject = onDragObject
         self.onDropObject = onDropObject
         self.buttonActions = buttonActions
+        self.label = label
     }
     
-    public typealias Action = ScrollViewGestureButton<Content>.Action
-    public typealias DragAction = ScrollViewGestureButton<Content>.DragAction
-    public typealias LabelBuilder = ScrollViewGestureButton<Content>.LabelBuilder
+    public typealias Action = () -> Void
+    public typealias DragAction = (DragGesture.Value) -> Void
+    public typealias LabelBuilder = (_ isPressed: Bool) -> Label
     
-    
-    public func body(content: Content) -> some View {
+    public var body: some View {
         ScrollViewGestureButton(
+            offset: $dragOffset,
             pressAction: buttonActions?.pressAction,
             releaseInsideAction: buttonActions?.releaseInsideAction,
             dragStartAction: { gesture in
                 
             },
             dragAction: { gesture in
-                print("drag action")
                 self.dragOffset = CGSize(
                     width: gesture.translation.width,
                     height: gesture.translation.height)
@@ -70,7 +80,6 @@ struct DragableButton: ViewModifier, DragableModifier {
                 }
             },
             dragEndAction: { gesture in
-                print("drag end action")
                 let successfulDrop = self.onDropped != nil ? self.onDropped!(gesture.location) : self.onDropObject!(dragableObject!, gesture.location)
                 withAnimation(.linear(duration: DrawingConstants.dragStateOnEndedTransitionDuration)) {
                     self.dragState = .none
@@ -81,34 +90,22 @@ struct DragableButton: ViewModifier, DragableModifier {
             },
             endAction: {
                 
-            }) { _ in
-                content
-            }
-            .offset(x: dragOffset.width, y: dragOffset.height)
+            },
+            label: label
+        )
     }
 }
 
 @available(iOS 14, *)
-extension DragableButton {
-    init() {
-        print("init Button")
+public extension DragableButton {
+    public init(label: @escaping LabelBuilder, buttonActions: DragableButtonActions? = nil) {
         self.dragableObject = nil
+        self.label = label
         self.onDragged = defaultOnDragged
         self.onDropped = defaultOnDropped
-        self.buttonActions = DragableButtonActions(pressAction: {
-            print("press action")
-        }, releaseInsideAction: {
-            print("release inside action")
-        })
+        self.buttonActions = buttonActions
     }
     
     private func defaultOnDragged(_: CGPoint) -> DragState { .unknown }
     private func defaultOnDropped(_: CGPoint) -> Bool { false }
-}
-
-@available(iOS 14, *)
-extension View {
-    public func dragableButton() -> some View {
-        modifier(DragableButton())
-    }
 }
